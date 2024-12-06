@@ -20,7 +20,7 @@ interface UserData {
   id: string;
 }
 
-const Home: NextPage = () => {
+const Modern: NextPage = () => {
   const { authenticated } = usePrivy();
   const { events, isLoading } = useEvents();
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
@@ -201,4 +201,4 @@ const Home: NextPage = () => {
   );
 };
 
-export default Home;
+export default Modern;
