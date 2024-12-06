@@ -11,6 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { usePrivy } from "@privy-io/react-auth";
+import { Button } from "@/components/ui/button";
+import { EventDetailsDrawer } from "@/components/event-details-drawer";
 
 interface UserWithEvents extends UserMetadata {
   hosted_events_count?: number;
@@ -23,6 +26,7 @@ interface UserEvents {
 }
 
 export default function Directory() {
+  const { authenticated, login } = usePrivy();
   const [users, setUsers] = useState<UserWithEvents[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<UserWithEvents | null>(null);
@@ -31,6 +35,7 @@ export default function Directory() {
     attending: [],
   });
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -113,7 +118,11 @@ export default function Directory() {
         {events.map((event) => (
           <div
             key={event.id}
-            className="flex items-start gap-3 p-3 rounded-lg border"
+            className="flex items-start gap-3 p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent closing the user drawer
+              setSelectedEvent(event);
+            }}
           >
             <span className="text-xl">{event.vibe || "🎯"}</span>
             <div className="space-y-1 flex-1">
@@ -130,6 +139,21 @@ export default function Directory() {
       </div>
     );
   };
+
+  if (!authenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] p-4 text-center">
+        <h1 className="text-2xl font-semibold mb-3">Stop lurking! 👀</h1>
+        <p className="text-muted-foreground mb-6 max-w-sm">
+          Sign up to see who's coming to Sri Lanka and what vibes they're
+          bringing
+        </p>
+        <Button onClick={login} size="lg">
+          Sign up
+        </Button>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -235,6 +259,13 @@ export default function Directory() {
           </ScrollArea>
         </DrawerContent>
       </Drawer>
+
+      {/* Event Details Drawer */}
+      <EventDetailsDrawer
+        event={selectedEvent}
+        isOpen={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
     </div>
   );
 }

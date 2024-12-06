@@ -23,15 +23,15 @@ export function Navbar() {
 
   const NavLinks = () => (
     <>
-      <Link href="/">
-        <Button variant="ghost">Schedule</Button>
-      </Link>
-      <Link href="/games">
-        <Button variant="ghost">Games</Button>
-      </Link>
-      <Link href="/directory">
-        <Button variant="ghost">Community</Button>
-      </Link>
+      <DropdownMenuItem asChild>
+        <Link href="/">Schedule</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/games">Games</Link>
+      </DropdownMenuItem>
+      <DropdownMenuItem asChild>
+        <Link href="/directory">Community</Link>
+      </DropdownMenuItem>
     </>
   );
 
@@ -68,8 +68,8 @@ export function Navbar() {
             <Image
               src="/logos/logo.png"
               alt="Jelloverse Logo"
-              width={32}
-              height={32}
+              width={48}
+              height={48}
               className="mr-2"
             />
             {/* <span className="font-semibold text-lg">Jelloverse</span> */}
@@ -78,7 +78,16 @@ export function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-4">
-          <NavLinks />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                Menu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <NavLinks />
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Mobile Navigation */}

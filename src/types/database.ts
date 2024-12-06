@@ -4,6 +4,7 @@ export interface UserMetadata {
   username?: string;
   display_name?: string;
   bio?: string;
+  vibes?: string[];
   avatar_url?: string;
   timezone?: string;
   created_at: string;
@@ -17,6 +18,7 @@ export interface Event {
   start_time: string;
   duration: number;
   location?: string;
+  location_name?: string;
   is_core: boolean;
   privy_user_id: string;
   vibe?: string;

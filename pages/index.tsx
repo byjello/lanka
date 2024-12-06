@@ -2,7 +2,7 @@ import type { NextPage } from "next";
 import { usePrivy } from "@privy-io/react-auth";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { CreateEventDrawer } from "@/components/create-event-drawer";
 import { useEvents } from "@/hooks/useEvents";
 import { format, isSameDay, startOfDay, isAfter } from "date-fns";
@@ -39,6 +39,7 @@ interface Filters {
   date?: Date;
   vibe?: string;
   timeOfDay?: "morning" | "afternoon" | "evening";
+  attending?: boolean;
 }
 
 interface UserData {
@@ -62,8 +63,8 @@ const VIBES = [
 ];
 
 const Home: NextPage = () => {
-  const { authenticated } = usePrivy();
-  const { events, isLoading } = useEvents();
+  const { authenticated, user } = usePrivy();
+  const { events, isLoading, isAttending } = useEvents();
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [filters, setFilters] = useState<Filters>({});
@@ -129,6 +130,9 @@ const Home: NextPage = () => {
           return false;
         if (filters.timeOfDay === "evening" && eventHour < 17) return false;
       }
+
+      // Filter by attending
+      if (filters.attending && user && !isAttending(event)) return false;
 
       // Only show events after START_DATE
       return isAfter(eventDate, startOfDay(START_DATE));
@@ -274,6 +278,32 @@ const Home: NextPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Add Attending Filter */}
+                {user && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Show Only</label>
+                    <Select
+                      value={filters.attending ? "attending" : "all"}
+                      onValueChange={(value) =>
+                        setFilters((f) => ({
+                          ...f,
+                          attending: value === "attending",
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select events" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All events</SelectItem>
+                        <SelectItem value="attending">
+                          Events I'm attending
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
               <DrawerFooter className="px-4 py-6">
                 <Button
@@ -317,20 +347,32 @@ const Home: NextPage = () => {
                   className="group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer"
                   onClick={() => setSelectedEvent(event)}
                 >
-                  {/* Emoji and Title Row */}
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-2xl">{event.vibe || "🎯"}</span>
-                    <h3 className="font-medium text-sm sm:text-base">
-                      {event.title}
-                    </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{event.vibe || "🎯"}</span>
+                      <h3 className="font-medium text-sm sm:text-base">
+                        {event.title}
+                      </h3>
+                    </div>
+                    {user && isAttending(event) && (
+                      <span className="flex items-center gap-1 text-xs text-primary">
+                        <Check className="h-3 w-3" />
+                        Attending
+                      </span>
+                    )}
                   </div>
 
-                  {/* Time and Host Row */}
-                  <div className="space-y-1 mb-3">
+                  <div className="space-y-1">
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(event.start_time), "h:mm a")}
                       {" · "}
                       {event.duration} mins
+                      {event.location_name && (
+                        <>
+                          {" · "}
+                          <span>{event.location_name}</span>
+                        </>
+                      )}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Hosted by{" "}
@@ -339,17 +381,6 @@ const Home: NextPage = () => {
                           "loading..."}
                       </span>
                     </p>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="flex justify-end">
-                    <Button
-                      variant="ghost"
-                      className="text-xs sm:text-sm text-primary hover:text-primary/80"
-                    >
-                      let's jiggle{" "}
-                      <ArrowRight className="ml-1 h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
                   </div>
                 </div>
               ))}

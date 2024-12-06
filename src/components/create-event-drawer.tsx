@@ -101,19 +101,37 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
   };
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title?.trim()) newErrors.title = "Title is required";
-    if (!date) newErrors.date = "Date is required";
-    if (!hour || !minute || !period) newErrors.time = "Time is required";
-    if (!formData.vibe) newErrors.vibe = "Vibe is required";
-    if (!formData.location?.trim()) {
-      newErrors.location = "Location is required";
-    } else if (!isValidGoogleMapsLink(formData.location)) {
-      newErrors.location = "Please enter a valid Google Maps link";
+    try {
+      if (!formData.title?.trim()) {
+        throw new Error("Title is required");
+      }
+      if (!date) {
+        throw new Error("Date is required");
+      }
+      if (!hour || !minute || !period) {
+        throw new Error("Time is required");
+      }
+      if (!formData.location_name?.trim()) {
+        throw new Error("Location name is required");
+      }
+      if (!formData.location?.trim()) {
+        throw new Error("Location link is required");
+      }
+      if (!isValidGoogleMapsLink(formData.location)) {
+        throw new Error("Please enter a valid Google Maps link");
+      }
+      return true;
+    } catch (error) {
+      toast({
+        title: "Validation Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please check all required fields",
+        variant: "destructive",
+      });
+      return false;
     }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const triggerConfetti = () => {
@@ -126,7 +144,8 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    const isValid = validateForm();
+    if (!isValid) return;
 
     setIsLoading(true);
     try {
@@ -376,27 +395,35 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="location" className="text-sm font-medium">
-                  Location *
-                </Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Location Name *</Label>
+                <Input
+                  value={formData.location_name || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location_name: e.target.value })
+                  }
+                  placeholder="e.g., Hiriketiya Beach"
+                  className="h-9 text-sm"
+                  required
+                />
               </div>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="Google Maps location link"
-                className="h-9 text-sm"
-                required
-              />
-              {errors.location && (
-                <p className="text-sm text-destructive">{errors.location}</p>
-              )}
+
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Location Link *</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Google Maps link (e.g., https://maps.google.com/...)
+                </p>
+                <Input
+                  value={formData.location || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  placeholder="Google Maps location link"
+                  className="h-9 text-sm"
+                  required
+                />
+              </div>
             </div>
 
             <DrawerFooter className="px-4 py-3">
