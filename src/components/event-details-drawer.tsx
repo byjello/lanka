@@ -8,11 +8,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Event } from "@/types/database";
 import { format } from "date-fns";
-import { MapPin, Clock, User, X, ExternalLink, Check } from "lucide-react";
+import {
+  MapPin,
+  Clock,
+  User,
+  X,
+  ExternalLink,
+  Check,
+  Loader2,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useEvents } from "@/hooks/useEvents";
 import { useToast } from "@/hooks/use-toast";
+import { usePrivy } from "@privy-io/react-auth";
+import confetti from "canvas-confetti";
 
 interface EventDetailsDrawerProps {
   event: Event | null;
@@ -25,10 +35,12 @@ export function EventDetailsDrawer({
   isOpen,
   onClose,
 }: EventDetailsDrawerProps) {
+  const { user, authenticated } = usePrivy();
   const [host, setHost] = useState<{ display_name: string } | null>(null);
   const { toggleAttendance, isAttending } = useEvents();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchHost = async () => {
@@ -53,26 +65,44 @@ export function EventDetailsDrawer({
   const eventDate = new Date(event.start_time);
   const endTime = new Date(eventDate.getTime() + event.duration * 60000);
 
-  const handleAttendanceToggle = async () => {
-    if (!event) return;
-    setIsUpdating(true);
+  const handleAttendance = async () => {
+    if (!event || !authenticated) return;
+
+    setIsSubmitting(true);
     try {
+      const wasAttending = isAttending(event);
       await toggleAttendance(event.id);
-      const action = isAttending(event) ? "left" : "joined";
-      toast({
-        description: `Successfully ${action} event`,
-        className: isAttending(event)
-          ? undefined
-          : "bg-green-50 border-green-200",
-      });
+
+      if (!wasAttending) {
+        // Show confetti and attending toast
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+        toast({
+          title: "You're going! 🪩 🪩 🪩 🪩 🪩",
+          description: "We can't wait to see you there!",
+        });
+      } else {
+        // Show cancellation toast
+        toast({
+          title: "Maybe next time 😢 😢 😢 😢 😢",
+          description: "You've cancelled your attendance",
+          variant: "destructive",
+        });
+      }
+
+      // Close the drawer
       onClose();
     } catch (error) {
       toast({
+        title: "Error",
         description: "Failed to update attendance",
         variant: "destructive",
       });
     } finally {
-      setIsUpdating(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -153,16 +183,16 @@ export function EventDetailsDrawer({
         <div className="p-4 border-t">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-muted-foreground">
-              {event.attendees?.length || 0} people attending
+              {event?.attendees?.length || 0} people attending
             </p>
             <Button
-              onClick={handleAttendanceToggle}
+              onClick={handleAttendance}
               variant={isAttending(event) ? "outline" : "default"}
-              disabled={isUpdating}
-              className="min-w-[100px]"
+              disabled={!authenticated || isSubmitting}
+              className="min-w-[80px]"
             >
-              {isUpdating ? (
-                <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full" />
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : isAttending(event) ? (
                 "Cancel"
               ) : (

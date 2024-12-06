@@ -28,7 +28,7 @@ export default async function handler(
       .eq("id", id)
       .single();
 
-    const currentAttendees = event?.attendees || [];
+    const currentAttendees: string[] = event?.attendees || [];
     const isAttending = currentAttendees.includes(privyId);
 
     // Update attendees array
@@ -36,8 +36,10 @@ export default async function handler(
       .from("events")
       .update({
         attendees: isAttending
-          ? currentAttendees.filter((id) => id !== privyId) // Remove user
-          : [...currentAttendees, privyId], // Add user
+          ? currentAttendees.filter(
+              (attendeeId: string) => attendeeId !== privyId
+            )
+          : [...currentAttendees, privyId],
       })
       .eq("id", id);
 

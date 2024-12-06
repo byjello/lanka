@@ -7,15 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
+import { VIBES, MAX_VIBES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Onboarding() {
   const { user } = usePrivy();
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedVibes, setSelectedVibes] = useState<string[]>([]);
 
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -32,7 +37,7 @@ export default function Onboarding() {
 
       if (userData?.display_name) {
         // User already onboarded
-        router.push("/modern");
+        router.push("/");
       } else {
         setIsLoading(false);
       }
@@ -41,9 +46,20 @@ export default function Onboarding() {
     checkOnboardingStatus();
   }, [user, router]);
 
+  const handleVibeSelect = (vibe: string) => {
+    setSelectedVibes((current) => {
+      if (current.includes(vibe)) {
+        return current.filter((v) => v !== vibe);
+      }
+      if (current.length >= MAX_VIBES) {
+        return current;
+      }
+      return [...current, vibe];
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setIsSubmitting(true);
 
     try {
@@ -58,39 +74,46 @@ export default function Onboarding() {
         );
       }
 
+      if (!bio?.trim()) {
+        throw new Error("Please provide a short bio");
+      }
+
+      if (selectedVibes.length !== MAX_VIBES) {
+        throw new Error(`Please select exactly ${MAX_VIBES} vibes`);
+      }
+
       // Check if display name is taken
-      const { data: existingUsers, error: checkError } = await supabase
+      const { data: existingUsers } = await supabase
         .from("users")
         .select("display_name")
         .eq("display_name", displayName);
-
-      if (checkError) {
-        throw new Error("Error checking display name availability");
-      }
 
       if (existingUsers && existingUsers.length > 0) {
         throw new Error("This display name is already taken");
       }
 
       // Update user profile
-      const { data: updateData, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from("users")
         .update({
           display_name: displayName,
           bio: bio,
-          updated_at: new Date().toISOString(),
+          vibes: selectedVibes,
         })
-        .eq("privy_id", user.id)
-        .select("*");
+        .eq("privy_id", user.id);
 
-      if (updateError || !updateData || updateData.length === 0) {
-        throw new Error("Failed to update profile. Please try again.");
-      }
+      if (updateError) throw updateError;
 
-      // Success! Redirect to main app
-      router.push("/modern");
+      // Redirect to main app
+      router.push("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -141,9 +164,36 @@ export default function Onboarding() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
+          <div className="space-y-2">
+            <Label>
+              Your Vibes ({selectedVibes.length}/{MAX_VIBES})
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Pick {MAX_VIBES} vibes that represent you
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {VIBES.map(({ emoji }) => (
+                <Button
+                  key={emoji}
+                  type="button"
+                  variant={
+                    selectedVibes.includes(emoji) ? "default" : "outline"
+                  }
+                  className={cn(
+                    "h-12 text-2xl flex items-center justify-center",
+                    selectedVibes.includes(emoji) && "ring-2 ring-primary"
+                  )}
+                  onClick={() => handleVibeSelect(emoji)}
+                  disabled={
+                    selectedVibes.length >= MAX_VIBES &&
+                    !selectedVibes.includes(emoji)
+                  }
+                >
+                  {emoji}
+                </Button>
+              ))}
+            </div>
+          </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (

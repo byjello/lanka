@@ -29,6 +29,9 @@ export function Navbar() {
       <Link href="/games">
         <Button variant="ghost">Games</Button>
       </Link>
+      <Link href="/directory">
+        <Button variant="ghost">Community</Button>
+      </Link>
     </>
   );
 

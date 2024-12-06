@@ -141,7 +141,8 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
         ...formData,
         start_time: eventDate.toISOString(),
         duration: formData.duration || 60,
-        is_core: false,
+        is_core: formData.is_core ?? false,
+        title: formData.title ?? "cool event",
         vibe: selectedEmoji,
       };
 

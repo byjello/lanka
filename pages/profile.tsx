@@ -8,10 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { VIBES, MAX_VIBES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface UserProfile {
   display_name: string;
   bio: string | null;
+  vibes: string[];
 }
 
 export default function Profile() {
@@ -23,8 +26,10 @@ export default function Profile() {
   const [profile, setProfile] = useState<UserProfile>({
     display_name: "",
     bio: "",
+    vibes: [],
   });
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -36,7 +41,7 @@ export default function Profile() {
       try {
         const { data, error } = await supabase
           .from("users")
-          .select("display_name, bio")
+          .select("display_name, bio, vibes")
           .eq("privy_id", user.id)
           .single();
 
@@ -46,6 +51,7 @@ export default function Profile() {
           setProfile({
             display_name: data.display_name || "",
             bio: data.bio || "",
+            vibes: data.vibes || [],
           });
         }
       } catch (err) {
@@ -65,18 +71,25 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsSaving(true);
+    setIsSubmitting(true);
 
     try {
       // Check if display name is valid
-      if (!profile.display_name.match(/^[a-z0-9_]+$/)) {
+      if (!profile.display_name?.match(/^[a-z0-9_]+$/)) {
         throw new Error(
           "Display name can only contain lowercase letters, numbers, and underscores"
         );
       }
 
-      // Check if display name is taken (excluding current user)
+      if (!profile.bio?.trim()) {
+        throw new Error("Please provide a short bio");
+      }
+
+      if (!profile.vibes || profile.vibes.length !== MAX_VIBES) {
+        throw new Error(`Please select exactly ${MAX_VIBES} vibes`);
+      }
+
+      // Check if display name is taken
       const { data: existingUsers } = await supabase
         .from("users")
         .select("privy_id")
@@ -93,6 +106,7 @@ export default function Profile() {
         .update({
           display_name: profile.display_name,
           bio: profile.bio,
+          vibes: profile.vibes,
           updated_at: new Date().toISOString(),
         })
         .eq("privy_id", user!.id);
@@ -104,7 +118,6 @@ export default function Profile() {
         description: "Profile updated successfully",
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update profile");
       toast({
         title: "Error",
         description:
@@ -112,8 +125,26 @@ export default function Profile() {
         variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
+  };
+
+  const handleVibeSelect = (vibe: string) => {
+    setProfile((current) => {
+      if (current.vibes.includes(vibe)) {
+        return {
+          ...current,
+          vibes: current.vibes.filter((v) => v !== vibe),
+        };
+      }
+      if (current.vibes.length >= MAX_VIBES) {
+        return current;
+      }
+      return {
+        ...current,
+        vibes: [...current.vibes, vibe],
+      };
+    });
   };
 
   if (isLoading) {
@@ -176,9 +207,40 @@ export default function Profile() {
                 className="resize-none min-h-[100px]"
               />
             </div>
-          </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+            <div className="space-y-2">
+              <Label>
+                Your Vibes ({profile.vibes?.length || 0}/{MAX_VIBES})
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {VIBES.map(({ emoji }) => (
+                  <Button
+                    key={emoji}
+                    type="button"
+                    variant={
+                      profile.vibes?.includes(emoji) ? "default" : "outline"
+                    }
+                    className={cn(
+                      "h-12 text-2xl flex items-center justify-center",
+                      profile.vibes?.includes(emoji) && "ring-2 ring-primary"
+                    )}
+                    onClick={() => {
+                      const newVibes = profile.vibes?.includes(emoji)
+                        ? profile.vibes.filter((v) => v !== emoji)
+                        : [...(profile.vibes || []), emoji].slice(0, MAX_VIBES);
+                      setProfile({ ...profile, vibes: newVibes });
+                    }}
+                    disabled={
+                      (profile.vibes?.length || 0) >= MAX_VIBES &&
+                      !profile.vibes?.includes(emoji)
+                    }
+                  >
+                    {emoji}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <Button
             type="submit"
