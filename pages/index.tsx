@@ -354,10 +354,18 @@ const Home: NextPage = () => {
                         {event.title}
                       </h3>
                     </div>
-                    {user && isAttending(event) && (
+                    {user && (
                       <span className="flex items-center gap-1 text-xs text-primary">
-                        <Check className="h-3 w-3" />
-                        Attending
+                        {isAttending(event) ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            Attending
+                          </>
+                        ) : (
+                          <>
+                            let's jiggle <ArrowRight className="h-3 w-3" />
+                          </>
+                        )}
                       </span>
                     )}
                   </div>
