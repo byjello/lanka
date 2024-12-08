@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Check } from "lucide-react";
 import { CreateEventDrawer } from "@/components/create-event-drawer";
 import { useEvents } from "@/hooks/useEvents";
-import { format, isSameDay, startOfDay, isAfter } from "date-fns";
+import {
+  format,
+  isSameDay,
+  startOfDay,
+  isAfter,
+  differenceInMinutes,
+  addDays,
+} from "date-fns";
 import { Event } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
@@ -158,6 +165,24 @@ const Home: NextPage = () => {
   };
 
   const groupedEvents = getFilteredAndGroupedEvents();
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} mins`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+  const calculateDuration = (startTime: Date, endTime: Date) => {
+    const adjustedEndTime = endTime < startTime ? addDays(endTime, 1) : endTime;
+    const durationInMinutes = differenceInMinutes(adjustedEndTime, startTime);
+    return formatDuration(durationInMinutes);
+  };
 
   if (isLoading) {
     return (
@@ -374,7 +399,10 @@ const Home: NextPage = () => {
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(event.start_time), "h:mm a")}
                       {" · "}
-                      {event.duration} mins
+                      {calculateDuration(
+                        new Date(event.start_time),
+                        new Date(event.end_time)
+                      )}
                       {event.location_name && (
                         <>
                           {" · "}

@@ -28,39 +28,31 @@ export default async function handler(
   }
 
   if (req.method === "POST") {
-    // First verify the user exists
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("privy_id", privyId)
-      .single();
-
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
-    }
-
     const eventData: CreateEventInput = req.body;
 
-    if (!eventData.title || !eventData.start_time || !eventData.duration) {
+    if (!eventData.title || !eventData.start_time || !eventData.end_time) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const { data, error } = await supabase
-      .from("events")
-      .insert({
-        ...eventData,
-        privy_user_id: privyId,
-        is_core: eventData.is_core || false,
-      })
-      .select()
-      .single();
+    try {
+      const { data: event, error } = await supabase
+        .from("events")
+        .insert([
+          {
+            ...eventData,
+            privy_user_id: privyId,
+          },
+        ])
+        .select()
+        .single();
 
-    if (error) {
-      console.error("Event creation error:", error);
-      return res.status(500).json({ error: error.message });
+      if (error) throw error;
+
+      return res.status(200).json(event);
+    } catch (error) {
+      console.error("Error creating event:", error);
+      return res.status(500).json({ error: "Failed to create event" });
     }
-
-    return res.status(201).json(data);
   }
 
   return res.status(405).json({ error: "Method not allowed" });

@@ -16,7 +16,7 @@ export interface Event {
   title: string;
   description?: string;
   start_time: string;
-  duration: number;
+  end_time: string;
   location?: string;
   location_name?: string;
   is_core: boolean;

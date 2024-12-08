@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Event } from "@/types/database";
-import { format } from "date-fns";
+import { format, differenceInMinutes, addDays } from "date-fns";
 import {
   MapPin,
   Clock,
@@ -64,8 +64,26 @@ export function EventDetailsDrawer({
 
   if (!event) return null;
 
-  const eventDate = new Date(event.start_time);
-  const endTime = new Date(eventDate.getTime() + event.duration * 60000);
+  const startTime = new Date(event.start_time);
+  const endTime = new Date(event.end_time);
+
+  // If end time is before start time, assume it's the next day
+  const adjustedEndTime = endTime < startTime ? addDays(endTime, 1) : endTime;
+  const durationInMinutes = differenceInMinutes(adjustedEndTime, startTime);
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes} minutes`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
+    }
+    return `${hours} ${
+      hours === 1 ? "hour" : "hours"
+    } ${remainingMinutes} minutes`;
+  };
 
   const handleAttendance = async () => {
     if (!event || !authenticated) return;
@@ -134,12 +152,12 @@ export function EventDetailsDrawer({
               <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium">
-                  {format(eventDate, "EEEE, MMMM d")}
+                  {format(startTime, "EEEE, MMMM d")}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {format(eventDate, "h:mm a")} - {format(endTime, "h:mm a")}
+                  {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
                   {" · "}
-                  {event.duration} minutes
+                  {formatDuration(durationInMinutes)}
                 </p>
               </div>
             </div>

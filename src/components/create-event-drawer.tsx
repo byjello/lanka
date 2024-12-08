@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { format } from "date-fns";
+import { useState, useMemo, useRef, useEffect } from "react";
+import { format, addDays } from "date-fns";
 import {
   Drawer,
   DrawerClose,
@@ -37,13 +37,8 @@ import EmojiPicker, {
 } from "emoji-picker-react";
 import confetti from "canvas-confetti";
 import { Loader2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { InfoIcon } from "lucide-react";
+import { Autocomplete } from "@react-google-maps/api";
+import { Search } from "lucide-react";
 
 interface CreateEventDrawerProps {
   isOpen: boolean;
@@ -74,16 +69,23 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
   const [hour, setHour] = useState<string>("12");
   const [minute, setMinute] = useState<string>("00");
   const [period, setPeriod] = useState<string>("AM");
+  const [endHour, setEndHour] = useState<string>("12");
+  const [endMinute, setEndMinute] = useState<string>("00");
+  const [endPeriod, setEndPeriod] = useState<string>("AM");
   const [formData, setFormData] = useState<Partial<CreateEventInput>>({
     title: "",
     description: "",
-    duration: 60,
     location: "",
+    location_name: "",
     is_core: false,
     vibe: "🌴",
   });
   const [selectedEmoji, setSelectedEmoji] = useState("🌴");
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [autocomplete, setAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+  const [locationInput, setLocationInput] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const isValidGoogleMapsLink = (url: string) => {
     return (
@@ -142,51 +144,96 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
     });
   };
 
+  const initialFormState = {
+    title: "",
+    description: "",
+    location: "",
+    location_name: "",
+    is_core: false,
+    vibe: "🌴",
+  };
+
+  // Reset form when drawer closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
+
+  const resetForm = () => {
+    setFormData(initialFormState);
+    setDate(undefined);
+    setHour("12");
+    setMinute("00");
+    setPeriod("AM");
+    setEndHour("12");
+    setEndMinute("00");
+    setEndPeriod("AM");
+    setLocationInput("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isValid = validateForm();
-    if (!isValid) return;
-
     setIsLoading(true);
+
     try {
+      if (!date) throw new Error("Date is required");
+      if (!hour || !minute || !period)
+        throw new Error("Start time is required");
+      if (!endHour || !endMinute || !endPeriod)
+        throw new Error("End time is required");
+
+      // Check formData directly for location fields
+      if (!formData.location_name?.trim())
+        throw new Error("Location name is required");
+      if (!formData.location?.trim()) throw new Error("Location is required");
+
       let hours = parseInt(hour);
       if (period === "PM" && hours !== 12) hours += 12;
       else if (period === "AM" && hours === 12) hours = 0;
 
-      const eventDate = new Date(date!);
+      let endHours = parseInt(endHour);
+      if (endPeriod === "PM" && endHours !== 12) endHours += 12;
+      else if (endPeriod === "AM" && endHours === 12) endHours = 0;
+
+      const eventDate = new Date(date);
       eventDate.setHours(hours, parseInt(minute));
 
-      const eventData: CreateEventInput = {
-        ...formData,
+      let endDate = new Date(date);
+      endDate.setHours(endHours, parseInt(endMinute));
+
+      // If end time is before start time, assume it's the next day
+      if (endDate <= eventDate) {
+        endDate = addDays(endDate, 1);
+      }
+
+      const eventData = {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        location_name: formData.location_name,
+        is_core: formData.is_core,
+        vibe: formData.vibe,
         start_time: eventDate.toISOString(),
-        duration: formData.duration || 60,
-        is_core: formData.is_core ?? false,
-        title: formData.title ?? "cool event",
-        vibe: selectedEmoji,
+        end_time: endDate.toISOString(),
       };
 
       await createEvent(eventData);
-      triggerConfetti();
+
+      // Trigger confetti on success
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+      });
+
       toast({
         title: "Success! 🎉",
-        description: "Your event has been created",
-        className: "bg-green-50 border-green-200",
+        description: "Event created successfully",
       });
+
+      resetForm();
       onClose();
-      // Reset form
-      setDate(undefined);
-      setHour("12");
-      setMinute("00");
-      setPeriod("AM");
-      setSelectedEmoji("🌴");
-      setFormData({
-        title: "",
-        description: "",
-        duration: 60,
-        location: "",
-        is_core: false,
-        vibe: "🌴",
-      });
     } catch (error) {
       toast({
         title: "Error",
@@ -194,8 +241,30 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
           error instanceof Error ? error.message : "Failed to create event",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
+      return;
+    }
+  };
+
+  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
+    setAutocomplete(autocomplete);
+  };
+
+  const onPlaceSelected = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace();
+      if (place.place_id) {
+        const fullName = place.name || place.formatted_address || "";
+        const mapsUrl = place.url;
+
+        // Update both form data and location input synchronously
+        setLocationInput(fullName);
+        setFormData((prev) => ({
+          ...prev,
+          location_name: fullName,
+          location: mapsUrl,
+        }));
+      }
     }
   };
 
@@ -373,56 +442,75 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="duration" className="text-sm font-medium">
-                  Duration *
-                </Label>
-                <Select
-                  value={String(formData.duration)}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, duration: parseInt(value) })
-                  }
-                  required
-                >
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select duration" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[15, 30, 45, 60, 90, 120].map((d) => (
-                      <SelectItem key={d} value={String(d)} className="text-sm">
-                        {d} minutes
+                <Label className="text-sm font-medium">End Time *</Label>
+                <div className="flex items-center gap-2">
+                  <Select value={endHour} onValueChange={setEndHour}>
+                    <SelectTrigger className="w-[70px] h-9 text-sm">
+                      <SelectValue placeholder="Hour" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(12)].map((_, i) => (
+                        <SelectItem
+                          key={i + 1}
+                          value={String(i + 1).padStart(2, "0")}
+                          className="text-sm"
+                        >
+                          {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={endMinute} onValueChange={setEndMinute}>
+                    <SelectTrigger className="w-[70px] h-9 text-sm">
+                      <SelectValue placeholder="Min" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["00", "15", "30", "45"].map((m) => (
+                        <SelectItem key={m} value={m} className="text-sm">
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={endPeriod} onValueChange={setEndPeriod}>
+                    <SelectTrigger className="w-[70px] h-9 text-sm">
+                      <SelectValue placeholder="AM/PM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM" className="text-sm">
+                        AM
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      <SelectItem value="PM" className="text-sm">
+                        PM
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Location Name *</Label>
-                <Input
-                  value={formData.location_name || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location_name: e.target.value })
-                  }
-                  placeholder="e.g., Hiriketiya Beach"
-                  className="h-9 text-sm"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Location Link *</Label>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Google Maps link (e.g., https://maps.google.com/...)
-                </p>
-                <Input
-                  value={formData.location || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="Google Maps location link"
-                  className="h-9 text-sm"
-                  required
-                />
+                <Label className="text-sm font-medium">Location *</Label>
+                <div className="relative">
+                  <Autocomplete
+                    onLoad={onLoad}
+                    onPlaceChanged={onPlaceSelected}
+                    restrictions={{ country: "lk" }}
+                  >
+                    <div className="relative">
+                      <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={locationInput}
+                        onChange={(e) => setLocationInput(e.target.value)}
+                        type="text"
+                        className="pl-8 h-9 text-sm"
+                        placeholder="Search for a location..."
+                        required
+                      />
+                    </div>
+                  </Autocomplete>
+                </div>
               </div>
             </div>
 
