@@ -4,7 +4,6 @@ import { Layout } from "@/components/layout";
 import { AuthHandler } from "@/components/auth-handler";
 import "@/styles/globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { MapsProvider } from "@/components/providers/maps-provider";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -20,12 +19,10 @@ function MyApp({ Component, pageProps }: AppProps) {
       }}
     >
       <AuthHandler />
-      <MapsProvider>
-        <Layout>
-          <Component {...pageProps} />
-          <Toaster />
-        </Layout>
-      </MapsProvider>
+      <Layout>
+        <Component {...pageProps} />
+        <Toaster />
+      </Layout>
     </PrivyProvider>
   );
 }

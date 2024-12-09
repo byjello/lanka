@@ -37,8 +37,6 @@ import EmojiPicker, {
 } from "emoji-picker-react";
 import confetti from "canvas-confetti";
 import { Loader2 } from "lucide-react";
-import { Autocomplete } from "@react-google-maps/api";
-import { Search } from "lucide-react";
 
 interface CreateEventDrawerProps {
   isOpen: boolean;
@@ -82,10 +80,6 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
   });
   const [selectedEmoji, setSelectedEmoji] = useState("🌴");
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [autocomplete, setAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-  const [locationInput, setLocationInput] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
 
   const isValidGoogleMapsLink = (url: string) => {
     return (
@@ -116,10 +110,7 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
       if (!formData.location_name?.trim()) {
         throw new Error("Location name is required");
       }
-      if (!formData.location?.trim()) {
-        throw new Error("Location link is required");
-      }
-      if (!isValidGoogleMapsLink(formData.location)) {
+      if (formData.location && !isValidGoogleMapsLink(formData.location)) {
         throw new Error("Please enter a valid Google Maps link");
       }
       return true;
@@ -169,7 +160,6 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
     setEndHour("12");
     setEndMinute("00");
     setEndPeriod("AM");
-    setLocationInput("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,7 +176,6 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
       // Check formData directly for location fields
       if (!formData.location_name?.trim())
         throw new Error("Location name is required");
-      if (!formData.location?.trim()) throw new Error("Location is required");
 
       let hours = parseInt(hour);
       if (period === "PM" && hours !== 12) hours += 12;
@@ -233,6 +222,7 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
       });
 
       resetForm();
+      setIsLoading(false);
       onClose();
     } catch (error) {
       toast({
@@ -243,28 +233,6 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
       });
       setIsLoading(false);
       return;
-    }
-  };
-
-  const onLoad = (autocomplete: google.maps.places.Autocomplete) => {
-    setAutocomplete(autocomplete);
-  };
-
-  const onPlaceSelected = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      if (place.place_id) {
-        const fullName = place.name || place.formatted_address || "";
-        const mapsUrl = place.url;
-
-        // Update both form data and location input synchronously
-        setLocationInput(fullName);
-        setFormData((prev) => ({
-          ...prev,
-          location_name: fullName,
-          location: mapsUrl,
-        }));
-      }
     }
   };
 
@@ -490,26 +458,41 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Location *</Label>
-                <div className="relative">
-                  <Autocomplete
-                    onLoad={onLoad}
-                    onPlaceChanged={onPlaceSelected}
-                    restrictions={{ country: "lk" }}
-                  >
-                    <div className="relative">
-                      <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        value={locationInput}
-                        onChange={(e) => setLocationInput(e.target.value)}
-                        type="text"
-                        className="pl-8 h-9 text-sm"
-                        placeholder="Search for a location..."
-                        required
-                      />
-                    </div>
-                  </Autocomplete>
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Location Name *</Label>
+                  <Input
+                    value={formData.location_name}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        location_name: e.target.value,
+                      })
+                    }
+                    placeholder="Enter location name"
+                    className="h-9 text-sm"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">
+                    Location Link (Optional)
+                  </Label>
+                  <Input
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                    placeholder="Google Maps link (optional)"
+                    className="h-9 text-sm"
+                  />
+                  {formData.location &&
+                    !isValidGoogleMapsLink(formData.location) && (
+                      <p className="text-sm text-destructive">
+                        Please enter a valid Google Maps link
+                      </p>
+                    )}
                 </div>
               </div>
             </div>

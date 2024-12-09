@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Check,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
@@ -42,7 +43,10 @@ export function EventDetailsDrawer({
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showAttendees, setShowAttendees] = useState(false);
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
+  const { deleteEvent } = useEvents();
 
   useEffect(() => {
     const fetchHost = async () => {
@@ -126,6 +130,30 @@ export function EventDetailsDrawer({
     }
   };
 
+  const handleDeleteEvent = async () => {
+    if (!event || !authenticated || !user || user.id !== event.privy_user_id)
+      return;
+
+    setIsDeleting(true);
+    try {
+      await deleteEvent(event.id);
+      toast({
+        title: "Success",
+        description: "Event deleted successfully",
+      });
+      onClose();
+      setShowDeleteWarning(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete event",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <>
       <Drawer open={isOpen} onOpenChange={onClose}>
@@ -174,19 +202,23 @@ export function EventDetailsDrawer({
             </div>
 
             {/* Location */}
-            {event.location && event.location_name && (
+            {event.location_name && (
               <div className="flex items-center gap-3">
                 <MapPin className="h-5 w-5 text-muted-foreground shrink-0" />
                 <div>
                   <p className="text-sm text-muted-foreground">Location</p>
-                  <a
-                    href={event.location}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium hover:underline"
-                  >
-                    {event.location_name}
-                  </a>
+                  {event.location ? (
+                    <a
+                      href={event.location}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium hover:underline"
+                    >
+                      {event.location_name}
+                    </a>
+                  ) : (
+                    <p className="font-medium">{event.location_name}</p>
+                  )}
                 </div>
               </div>
             )}
@@ -213,18 +245,74 @@ export function EventDetailsDrawer({
               >
                 {event?.attendees?.length || 0} people attending
               </button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAttendance}
+                  variant={isAttending(event) ? "outline" : "default"}
+                  disabled={!authenticated || isSubmitting}
+                  className="min-w-[80px]"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : isAttending(event) ? (
+                    "Cancel"
+                  ) : (
+                    "Attend"
+                  )}
+                </Button>
+                {authenticated && user && user.id === event.privy_user_id && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteWarning(true)}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Delete"
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Delete Warning Drawer */}
+      <Drawer open={showDeleteWarning} onOpenChange={setShowDeleteWarning}>
+        <DrawerContent className="max-h-[90vh]">
+          <DrawerHeader className="border-b">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <DrawerTitle className="text-lg font-semibold">
+                Delete Event?
+              </DrawerTitle>
+            </div>
+          </DrawerHeader>
+          <div className="p-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete this event? This action cannot be
+              undone.
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
               <Button
-                onClick={handleAttendance}
-                variant={isAttending(event) ? "outline" : "default"}
-                disabled={!authenticated || isSubmitting}
-                className="min-w-[80px]"
+                variant="outline"
+                onClick={() => setShowDeleteWarning(false)}
+                className="w-full sm:w-auto"
               >
-                {isSubmitting ? (
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteEvent}
+                disabled={isDeleting}
+                className="w-full sm:w-auto"
+              >
+                {isDeleting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isAttending(event) ? (
-                  "Cancel"
                 ) : (
-                  "Attend"
+                  "Delete Event"
                 )}
               </Button>
             </div>

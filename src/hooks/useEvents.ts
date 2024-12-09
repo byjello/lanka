@@ -39,6 +39,26 @@ export function useEvents() {
     return response.json();
   };
 
+  const deleteEvent = async (eventId: string) => {
+    if (!user) throw new Error("Must be authenticated");
+
+    const token = await getAccessToken();
+    const response = await fetch(`/api/events/${eventId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to delete event");
+    }
+
+    // Refresh the events list immediately after successful deletion
+    await mutate();
+  };
+
   const toggleAttendance = async (eventId: string) => {
     if (!user) throw new Error("Must be authenticated");
 
@@ -67,6 +87,7 @@ export function useEvents() {
     isLoading: !error && !data,
     isError: error,
     createEvent,
+    deleteEvent,
     toggleAttendance,
     isAttending,
     mutate,
