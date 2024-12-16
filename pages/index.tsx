@@ -67,10 +67,11 @@ const VIBES = [
   "🍺",
   "🫖",
   "🎉",
+  "🍄",
 ];
 
 const Home: NextPage = () => {
-  const { authenticated, user } = usePrivy();
+  const { login, authenticated, user } = usePrivy();
   const { events, isLoading, isAttending } = useEvents();
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -184,6 +185,23 @@ const Home: NextPage = () => {
     return formatDuration(durationInMinutes);
   };
 
+  if (!authenticated) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
+          <h1 className="text-2xl font-bold">Hi Friend!</h1>
+          <p className="text-muted-foreground max-w-md">
+            Join us to discover and participate in events happening in Ahangama.
+            We're so excited to have you 🤗🤗🤗
+          </p>
+          <Button onClick={login} size="lg">
+            Get Started
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
@@ -197,164 +215,187 @@ const Home: NextPage = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
-      {/* Header with Filters Button */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <Drawer>
-            <DrawerTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-                {Object.keys(filters).length > 0 && (
-                  <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
-                    {Object.keys(filters).length}
-                  </span>
-                )}
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent>
-              <DrawerHeader>
-                <DrawerTitle>Filter Events</DrawerTitle>
-              </DrawerHeader>
-              <div className="px-4 py-2 space-y-6">
-                {/* Date Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !filters.date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {filters.date
-                          ? format(filters.date, "PPP")
-                          : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={filters.date}
-                        onSelect={(date) => setFilters((f) => ({ ...f, date }))}
-                        disabled={(date) =>
-                          date < START_DATE || date > new Date("2025-01-05")
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Vibe Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Vibe</label>
-                  <Select
-                    value={filters.vibe || "all"}
-                    onValueChange={(vibe) =>
-                      setFilters((f) => ({
-                        ...f,
-                        vibe: vibe === "all" ? undefined : vibe,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select vibe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All vibes</SelectItem>
-                      {VIBES.map((vibe) => (
-                        <SelectItem key={vibe} value={vibe}>
-                          <span className="flex items-center gap-2">
-                            {vibe}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Time of Day Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Time of Day</label>
-                  <Select
-                    value={filters.timeOfDay || "all"}
-                    onValueChange={(time) =>
-                      setFilters((f) => ({
-                        ...f,
-                        timeOfDay:
-                          time === "all"
-                            ? undefined
-                            : (time as Filters["timeOfDay"]),
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any time</SelectItem>
-                      <SelectItem value="morning">Morning</SelectItem>
-                      <SelectItem value="afternoon">Afternoon</SelectItem>
-                      <SelectItem value="evening">Evening</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Add Attending Filter */}
-                {user && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Show Only</label>
-                    <Select
-                      value={filters.attending ? "attending" : "all"}
-                      onValueChange={(value) =>
-                        setFilters((f) => ({
-                          ...f,
-                          attending: value === "attending",
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select events" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All events</SelectItem>
-                        <SelectItem value="attending">
-                          Events I'm attending
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-              <DrawerFooter className="px-4 py-6">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setFilters({})}
-                >
-                  Clear Filters
-                </Button>
-                <DrawerClose asChild>
-                  <Button className="w-full">Apply Filters</Button>
-                </DrawerClose>
-              </DrawerFooter>
-            </DrawerContent>
-          </Drawer>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-2">Jam Schedule</h1>
+        <p className="text-muted-foreground">
+          Find and join events happening in Ahangama. From surf sessions to yoga
+          classes, beach cleanups to dinner parties - there's always something
+          happening. Also, be active and create your own jams!
+        </p>
+        <div className="flex items-center mt-2">
+          <span className="text-muted-foreground">
+            Look out for{" "}
+            <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
+              Main Jam
+            </span>{" "}
+            events! These are jams you don't want to miss.
+          </span>
         </div>
+      </div>
 
-        {authenticated && (
-          <Button onClick={() => setIsCreateDrawerOpen(true)} size="sm">
-            Create Event
-          </Button>
-        )}
+      <div className="border-b mb-8" />
+
+      <div className="flex justify-center gap-2 mb-8">
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button variant="outline" size="sm" className="rounded-full gap-2">
+              <Filter className="h-4 w-4" />
+              Filters
+              {Object.keys(filters).length > 0 && (
+                <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
+                  {Object.keys(filters).length}
+                </span>
+              )}
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Filter Events</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4 py-2 space-y-6">
+              {/* Date Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !filters.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {filters.date
+                        ? format(filters.date, "PPP")
+                        : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={filters.date}
+                      onSelect={(date) => setFilters((f) => ({ ...f, date }))}
+                      disabled={(date) =>
+                        date < START_DATE || date > new Date("2025-01-05")
+                      }
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Vibe Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vibe</label>
+                <Select
+                  value={filters.vibe || "all"}
+                  onValueChange={(vibe) =>
+                    setFilters((f) => ({
+                      ...f,
+                      vibe: vibe === "all" ? undefined : vibe,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vibe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All vibes</SelectItem>
+                    {VIBES.map((vibe) => (
+                      <SelectItem key={vibe} value={vibe}>
+                        <span className="flex items-center gap-2">{vibe}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Time of Day Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Time of Day</label>
+                <Select
+                  value={filters.timeOfDay || "all"}
+                  onValueChange={(time) =>
+                    setFilters((f) => ({
+                      ...f,
+                      timeOfDay:
+                        time === "all"
+                          ? undefined
+                          : (time as Filters["timeOfDay"]),
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any time</SelectItem>
+                    <SelectItem value="morning">Morning</SelectItem>
+                    <SelectItem value="afternoon">Afternoon</SelectItem>
+                    <SelectItem value="evening">Evening</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Add Attending Filter */}
+              {user && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Show Only</label>
+                  <Select
+                    value={filters.attending ? "attending" : "all"}
+                    onValueChange={(value) =>
+                      setFilters((f) => ({
+                        ...f,
+                        attending: value === "attending",
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select events" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All events</SelectItem>
+                      <SelectItem value="attending">
+                        Events I'm attending
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+            <DrawerFooter className="px-4 py-6">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setFilters({})}
+              >
+                Clear Filters
+              </Button>
+              <DrawerClose asChild>
+                <Button className="w-full">Apply Filters</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+
+        <Button
+          variant={filters.attending ? "default" : "outline"}
+          size="sm"
+          className="rounded-full"
+          onClick={() =>
+            setFilters((f) => ({
+              ...f,
+              attending: !f.attending,
+            }))
+          }
+        >
+          {filters.attending ? "My Jams" : "My Jams"}
+        </Button>
       </div>
 
       {/* Events List */}
-      <div className="space-y-8">
+      <div className="space-y-8 pb-24">
         {Array.from(groupedEvents.entries()).map(([dateKey, dayEvents]) => (
           <div key={dateKey}>
             {/* Date Separator */}
@@ -369,15 +410,26 @@ const Home: NextPage = () => {
               {dayEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                  className={cn(
+                    "group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer",
+                    event.is_core &&
+                      "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
+                  )}
                   onClick={() => setSelectedEvent(event)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{event.vibe || "🎯"}</span>
-                      <h3 className="font-medium text-sm sm:text-base">
-                        {event.title}
-                      </h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-sm sm:text-base">
+                          {event.title}
+                        </h3>
+                        {event.is_core && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
+                            Main Jam
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {user && (
                       <span className="flex items-center gap-1 text-xs text-primary">
@@ -430,6 +482,19 @@ const Home: NextPage = () => {
           </div>
         )}
       </div>
+
+      {/* Fixed Create Event Button */}
+      {authenticated && (
+        <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50">
+          <Button
+            onClick={() => setIsCreateDrawerOpen(true)}
+            size="sm"
+            className="rounded-full shadow-sm"
+          >
+            Create a Jam!
+          </Button>
+        </div>
+      )}
 
       <EventDetailsDrawer
         event={selectedEvent}

@@ -30,6 +30,22 @@ export default async function handler(
   }
 
   if (req.method === "PUT") {
+    const { data: existingEvent } = await supabase
+      .from("events")
+      .select("privy_user_id")
+      .eq("id", id)
+      .single();
+
+    if (!existingEvent) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    if (existingEvent.privy_user_id !== privyId) {
+      return res
+        .status(403)
+        .json({ error: "Not authorized to edit this event" });
+    }
+
     const updates: UpdateEventInput = req.body;
 
     const { data, error } = await supabase
@@ -39,7 +55,6 @@ export default async function handler(
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
-      .eq("privy_user_id", privyId)
       .select()
       .single();
 

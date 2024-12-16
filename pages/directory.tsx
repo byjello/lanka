@@ -169,15 +169,16 @@ export default function Directory() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)]">
-      <div className="px-4 sm:px-6 py-4 border-b bg-background">
-        <h1 className="text-2xl font-semibold">Community</h1>
-        <p className="text-muted-foreground">
-          Meet the Jelloverse community members
-        </p>
-      </div>
-
       <ScrollArea className="flex-1 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold">Community</h1>
+            <p className="text-muted-foreground">
+              Meet the Jelloverse community members
+            </p>
+          </div>
+          <div className="border-b mb-8" />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {users.map((user) => (
               <div

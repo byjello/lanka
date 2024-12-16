@@ -78,6 +78,34 @@ export function useEvents() {
     mutate(); // Refresh events list
   };
 
+  const updateEvent = async (
+    eventId: string,
+    updates: Partial<
+      Omit<Event, "id" | "privy_user_id" | "created_at" | "updated_at">
+    >
+  ) => {
+    if (!user) throw new Error("Must be authenticated");
+
+    const token = await getAccessToken();
+    const response = await fetch(`/api/events/${eventId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to update event");
+    }
+
+    // Refresh the events list
+    await mutate();
+    return response.json();
+  };
+
   const isAttending = (event: Event) => {
     return user ? event.attendees?.includes(user.id) || false : false;
   };
@@ -88,6 +116,7 @@ export function useEvents() {
     isError: error,
     createEvent,
     deleteEvent,
+    updateEvent,
     toggleAttendance,
     isAttending,
     mutate,

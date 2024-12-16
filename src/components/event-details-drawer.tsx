@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePrivy } from "@privy-io/react-auth";
 import confetti from "canvas-confetti";
 import { AttendeesListDrawer } from "./attendees-list-drawer";
+import { EditEventDrawer } from "./edit-event-drawer";
 
 interface EventDetailsDrawerProps {
   event: Event | null;
@@ -47,6 +48,7 @@ export function EventDetailsDrawer({
   const [showAttendees, setShowAttendees] = useState(false);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const { deleteEvent } = useEvents();
+  const [showEditDrawer, setShowEditDrawer] = useState(false);
 
   useEffect(() => {
     const fetchHost = async () => {
@@ -157,8 +159,8 @@ export function EventDetailsDrawer({
   return (
     <>
       <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="border-b">
+        <DrawerContent className="max-h-[90vh] flex flex-col">
+          <DrawerHeader className="border-b flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{event.vibe || "🎯"}</span>
@@ -166,86 +168,113 @@ export function EventDetailsDrawer({
                   {event.title}
                 </DrawerTitle>
               </div>
-              <DrawerClose asChild>
-                <Button variant="ghost" size="icon">
-                  <X className="h-4 w-4" />
-                </Button>
-              </DrawerClose>
+              <div className="flex items-center gap-2">
+                {authenticated && user && user.id === event.privy_user_id && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEditDrawer(true)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteWarning(true)}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Delete"
+                      )}
+                    </Button>
+                  </>
+                )}
+                <DrawerClose asChild>
+                  <Button variant="ghost" size="icon">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DrawerClose>
+              </div>
             </div>
           </DrawerHeader>
 
-          <div className="p-4 space-y-6">
-            {/* Time Details */}
-            <div className="flex items-start gap-3">
-              <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium">
-                  {format(startTime, "EEEE, MMMM d")}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
-                  {" · "}
-                  {formatDuration(durationInMinutes)}
-                </p>
-              </div>
-            </div>
-
-            {/* Host Details */}
-            <div className="flex items-center gap-3">
-              <User className="h-5 w-5 text-muted-foreground shrink-0" />
-              <div>
-                <p className="text-sm text-muted-foreground">Hosted by</p>
-                <p className="font-medium">
-                  {host?.display_name || "Loading..."}
-                </p>
-              </div>
-            </div>
-
-            {/* Location */}
-            {event.location_name && (
-              <div className="flex items-center gap-3">
-                <MapPin className="h-5 w-5 text-muted-foreground shrink-0" />
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 space-y-6">
+              {/* Time Details */}
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Location</p>
-                  {event.location ? (
-                    <a
-                      href={event.location}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium hover:underline"
-                    >
-                      {event.location_name}
-                    </a>
-                  ) : (
-                    <p className="font-medium">{event.location_name}</p>
-                  )}
+                  <p className="font-medium">
+                    {format(startTime, "EEEE, MMMM d")}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(startTime, "h:mm a")} - {format(endTime, "h:mm a")}
+                    {" · "}
+                    {formatDuration(durationInMinutes)}
+                  </p>
                 </div>
               </div>
-            )}
 
-            {/* Description */}
-            {event.description && (
-              <div className="space-y-2">
-                <h3 className="font-medium">About this event</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {event.description}
-                </p>
+              {/* Host Details */}
+              <div className="flex items-center gap-3">
+                <User className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Hosted by</p>
+                  <p className="font-medium">
+                    {host?.display_name || "Loading..."}
+                  </p>
+                </div>
               </div>
-            )}
+
+              {/* Location */}
+              {event.location_name && (
+                <div className="flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Location</p>
+                    {event.location ? (
+                      <a
+                        href={event.location}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium hover:underline"
+                      >
+                        {event.location_name}
+                      </a>
+                    ) : (
+                      <p className="font-medium">{event.location_name}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {event.description && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">About this event</h3>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {event.description}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="p-4 border-t">
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowAttendees(true);
-                }}
-                className="text-sm text-primary hover:underline underline-offset-4 transition-colors"
-              >
-                {event?.attendees?.length || 0} people attending
-              </button>
-              <div className="flex gap-2">
+          <div className="border-t flex-shrink-0">
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAttendees(true);
+                  }}
+                  className="text-sm text-primary hover:underline underline-offset-4 transition-colors"
+                >
+                  {event?.attendees?.length || 0} people attending
+                </button>
                 <Button
                   onClick={handleAttendance}
                   variant={isAttending(event) ? "outline" : "default"}
@@ -260,19 +289,6 @@ export function EventDetailsDrawer({
                     "Attend"
                   )}
                 </Button>
-                {authenticated && user && user.id === event.privy_user_id && (
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowDeleteWarning(true)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      "Delete"
-                    )}
-                  </Button>
-                )}
               </div>
             </div>
           </div>
@@ -319,6 +335,14 @@ export function EventDetailsDrawer({
           </div>
         </DrawerContent>
       </Drawer>
+
+      {event && (
+        <EditEventDrawer
+          event={event}
+          isOpen={showEditDrawer}
+          onClose={() => setShowEditDrawer(false)}
+        />
+      )}
 
       {event && (
         <AttendeesListDrawer

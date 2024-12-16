@@ -41,6 +41,22 @@ import { Loader2 } from "lucide-react";
 interface CreateEventDrawerProps {
   isOpen: boolean;
   onClose: () => void;
+  mode?: "create" | "edit";
+  eventId?: string;
+  initialValues?: {
+    title: string;
+    description: string;
+    location: string;
+    location_name: string;
+    vibe: string;
+    date: Date;
+    hour: string;
+    minute: string;
+    period: string;
+    endHour: string;
+    endMinute: string;
+    endPeriod: string;
+  };
 }
 
 // Custom emoji list
@@ -56,10 +72,17 @@ const CUSTOM_EMOJIS = [
   { emoji: "🍺", name: "beer" },
   { emoji: "🫖", name: "tea" },
   { emoji: "🎉", name: "party" },
+  { emoji: "🍄", name: "mushroom" },
 ];
 
-export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
-  const { createEvent } = useEvents();
+export function CreateEventDrawer({
+  isOpen,
+  onClose,
+  mode = "create",
+  eventId,
+  initialValues,
+}: CreateEventDrawerProps) {
+  const { createEvent, updateEvent } = useEvents();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -162,6 +185,25 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
     setEndPeriod("AM");
   };
 
+  useEffect(() => {
+    if (initialValues && mode === "edit") {
+      setFormData({
+        title: initialValues.title,
+        description: initialValues.description,
+        location: initialValues.location,
+        location_name: initialValues.location_name,
+        vibe: initialValues.vibe,
+      });
+      setDate(initialValues.date);
+      setHour(initialValues.hour);
+      setMinute(initialValues.minute);
+      setPeriod(initialValues.period);
+      setEndHour(initialValues.endHour);
+      setEndMinute(initialValues.endMinute);
+      setEndPeriod(initialValues.endPeriod);
+    }
+  }, [initialValues, mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -201,38 +243,47 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
         description: formData.description,
         location: formData.location,
         location_name: formData.location_name,
-        is_core: formData.is_core,
         vibe: formData.vibe,
         start_time: eventDate.toISOString(),
         end_time: endDate.toISOString(),
+        is_core: formData.is_core || false,
       };
 
-      await createEvent(eventData);
-
-      // Trigger confetti on success
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-
-      toast({
-        title: "Success! 🎉",
-        description: "Event created successfully",
-      });
+      if (mode === "edit" && eventId) {
+        await updateEvent(eventId, eventData);
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+        toast({
+          title: "Success! 🎉",
+          description: "Jam updated successfully",
+        });
+      } else {
+        await createEvent(eventData);
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+        toast({
+          title: "Success! 🎉",
+          description: "Jam created successfully",
+        });
+      }
 
       resetForm();
-      setIsLoading(false);
       onClose();
     } catch (error) {
       toast({
         title: "Error",
         description:
-          error instanceof Error ? error.message : "Failed to create event",
+          error instanceof Error ? error.message : "Failed to save jam",
         variant: "destructive",
       });
+    } finally {
       setIsLoading(false);
-      return;
     }
   };
 
@@ -246,7 +297,7 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
         )}
         <DrawerHeader className="px-4 py-3">
           <DrawerTitle className="text-lg font-semibold">
-            Create New Event
+            {mode === "edit" ? "Edit Jam" : "Create New Jam"}
           </DrawerTitle>
         </DrawerHeader>
         <div className="px-4 py-2 space-y-4 overflow-y-auto">
@@ -298,7 +349,7 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
                 onChange={(e) =>
                   setFormData({ ...formData, title: e.target.value })
                 }
-                placeholder="Event title"
+                placeholder="Jam title"
                 required
                 className="h-9 text-sm"
               />
@@ -317,7 +368,7 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="Event description"
+                placeholder="Jam description"
                 className="min-h-[80px] text-sm resize-none"
                 required
               />
@@ -506,10 +557,12 @@ export function CreateEventDrawer({ isOpen, onClose }: CreateEventDrawerProps) {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {mode === "edit" ? "Updating..." : "Creating..."}
                   </>
+                ) : mode === "edit" ? (
+                  "Update Jam"
                 ) : (
-                  "Create Event"
+                  "Create Jam"
                 )}
               </Button>
               <DrawerClose asChild>
