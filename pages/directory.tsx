@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { EventDetailsDrawer } from "@/components/event-details-drawer";
 
 interface UserWithEvents extends UserMetadata {
-  hosted_events_count?: number;
   vibes?: string[];
 }
 
@@ -41,14 +40,9 @@ export default function Directory() {
     const fetchUsers = async () => {
       const { data, error } = await supabase
         .from("users")
-        .select(
-          `
-          *,
-          hosted_events_count:events(count)
-        `
-        )
+        .select("*")
         .not("display_name", "is", null)
-        .order("display_name");
+        .order("num_points", { ascending: false });
 
       if (data) {
         setUsers(data);
@@ -189,11 +183,9 @@ export default function Directory() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <h3 className="font-medium">{user.display_name}</h3>
-                    {user.hosted_events_count > 0 && (
-                      <span className="text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
-                        {user.hosted_events_count} events
-                      </span>
-                    )}
+                    <span className="text-xs bg-yellow-100/50 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300 rounded-full px-2 py-0.5 font-medium">
+                      {user.num_points || 0} ⭐
+                    </span>
                   </div>
                   {user.bio && (
                     <p className="text-sm text-muted-foreground line-clamp-2">

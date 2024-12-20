@@ -41,6 +41,7 @@ import {
   DrawerTrigger,
   DrawerFooter,
 } from "@/components/ui/drawer";
+import { NotificationsBanner } from "@/components/notifications-banner";
 
 interface Filters {
   date?: Date;
@@ -216,6 +217,7 @@ const Home: NextPage = () => {
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-8">
+        <NotificationsBanner />
         <h1 className="text-2xl font-bold mb-2">Jam Schedule</h1>
         <p className="text-muted-foreground">
           Find and join events happening in Ahangama. From surf sessions to yoga
