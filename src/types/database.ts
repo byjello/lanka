@@ -1,3 +1,5 @@
+import { TaskId } from "@/constants/tasks";
+
 export interface UserMetadata {
   id: string;
   privy_id: string;
@@ -9,6 +11,8 @@ export interface UserMetadata {
   timezone?: string;
   created_at: string;
   updated_at: string;
+  num_points: number;
+  completed_tasks: TaskId[];
 }
 
 export interface Event {

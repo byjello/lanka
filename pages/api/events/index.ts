@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabase";
 import { verifyPrivyToken } from "@/lib/auth";
 import { CreateEventInput } from "@/types/database";
+import { awardPoints } from "@/lib/points";
 
 const START_DATE = "2024-12-29";
 
@@ -35,18 +36,23 @@ export default async function handler(
     }
 
     try {
+      // Create the event
       const { data: event, error } = await supabase
         .from("events")
         .insert([
           {
             ...eventData,
             privy_user_id: privyId,
+            attendees: [privyId], // Creator automatically attends
           },
         ])
         .select()
         .single();
 
       if (error) throw error;
+
+      // Award points for creating an event (every time)
+      await awardPoints(privyId, "CREATE_JAM");
 
       return res.status(200).json(event);
     } catch (error) {

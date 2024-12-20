@@ -21,17 +21,19 @@ export function Navbar() {
     return "User";
   };
 
+  const navigation = [
+    { name: "Schedule", href: "/" },
+    { name: "Community", href: "/directory" },
+    { name: "Games", href: "/games" },
+  ];
+
   const NavLinks = () => (
     <>
-      <DropdownMenuItem asChild>
-        <Link href="/">Schedule</Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/games">Games</Link>
-      </DropdownMenuItem>
-      <DropdownMenuItem asChild>
-        <Link href="/directory">Community</Link>
-      </DropdownMenuItem>
+      {navigation.map((item) => (
+        <DropdownMenuItem key={item.name} asChild>
+          <Link href={item.href}>{item.name}</Link>
+        </DropdownMenuItem>
+      ))}
     </>
   );
 

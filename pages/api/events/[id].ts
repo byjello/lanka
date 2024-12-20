@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabase";
 import { verifyPrivyToken } from "@/lib/auth";
 import { UpdateEventInput } from "@/types/database";
+import { awardPoints, deductPoints } from "@/lib/points";
 
 export default async function handler(
   req: NextApiRequest,
@@ -70,6 +71,8 @@ export default async function handler(
       .eq("privy_user_id", privyId);
 
     if (error) return res.status(500).json({ error: error.message });
+    await deductPoints(privyId, "CREATE_JAM");
+
     return res.status(204).end();
   }
 

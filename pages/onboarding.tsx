@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { VIBES, MAX_VIBES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { awardPoints } from "@/lib/points";
 
 export default function Onboarding() {
   const { user } = usePrivy();
@@ -103,6 +104,9 @@ export default function Onboarding() {
         .eq("privy_id", user.id);
 
       if (updateError) throw updateError;
+
+      // Award points for completing signup
+      await awardPoints(user.id, "SIGN_UP");
 
       // Redirect to main app
       router.push("/");

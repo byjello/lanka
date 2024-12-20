@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabase";
 import { verifyPrivyToken } from "@/lib/auth";
+import { awardPoints, deductPoints } from "@/lib/points";
 
 export default async function handler(
   req: NextApiRequest,
@@ -44,6 +45,13 @@ export default async function handler(
       .eq("id", id);
 
     if (error) throw error;
+
+    // Award or deduct points based on attendance change
+    if (isAttending) {
+      await deductPoints(privyId, "ATTEND_JAM");
+    } else {
+      await awardPoints(privyId, "ATTEND_JAM");
+    }
 
     return res.status(200).json({ success: true });
   } catch (error) {
