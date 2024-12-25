@@ -166,9 +166,9 @@ export default function Directory() {
       <ScrollArea className="flex-1 p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold">Community</h1>
+            <h1 className="text-2xl font-semibold">community</h1>
             <p className="text-muted-foreground">
-              Meet the Jelloverse community members
+              meet the jelloverse community members
             </p>
           </div>
           <div className="border-b mb-8" />
@@ -230,7 +230,7 @@ export default function Directory() {
               {/* Bio Section */}
               {selectedUser?.bio && (
                 <div>
-                  <h3 className="text-sm font-medium mb-2">About</h3>
+                  <h3 className="text-sm font-medium mb-2">about</h3>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                     {selectedUser.bio}
                   </p>
@@ -239,13 +239,13 @@ export default function Directory() {
 
               {/* Hosting Section */}
               <div>
-                <h3 className="text-sm font-medium mb-3">Hosting</h3>
+                <h3 className="text-sm font-medium mb-3">hosting</h3>
                 <EventList events={userEvents.hosting} type="hosting" />
               </div>
 
               {/* Attending Section */}
               <div>
-                <h3 className="text-sm font-medium mb-3">Attending</h3>
+                <h3 className="text-sm font-medium mb-3">attending</h3>
                 <EventList events={userEvents.attending} type="attending" />
               </div>
             </div>

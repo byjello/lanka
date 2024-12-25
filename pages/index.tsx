@@ -190,10 +190,10 @@ const Home: NextPage = () => {
     return (
       <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center">
-          <h1 className="text-2xl font-bold">Hi Friend!</h1>
+          <h1 className="text-2xl font-bold">hi fren!</h1>
           <p className="text-muted-foreground max-w-md">
-            Join us to discover and participate in events happening in Ahangama.
-            We're so excited to have you 🤗🤗🤗
+            join us to discover and create jams happening in Ahangama. we're so
+            excited to have you 🤗🤗🤗
           </p>
           <Button onClick={login} size="lg">
             Get Started
@@ -218,19 +218,20 @@ const Home: NextPage = () => {
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-8">
         <NotificationsBanner />
-        <h1 className="text-2xl font-bold mb-2">Jam Schedule</h1>
+        <h1 className="text-2xl font-bold mb-2">jam schedule</h1>
         <p className="text-muted-foreground">
-          Find and join events happening in Ahangama. From surf sessions to yoga
-          classes, beach cleanups to dinner parties - there's always something
-          happening. Also, be active and create your own jams!
+          hello! this is a space for you to explore what's happening throughout
+          the week. you could also submit your own activity to let other people
+          join. we encourage you to get out of your comfort zone and trying new
+          things and meeting new friends ❤️
         </p>
         <div className="flex items-center mt-2">
           <span className="text-muted-foreground">
-            Look out for{" "}
+            look out for{" "}
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
-              Main Jam
+              main jam
             </span>{" "}
-            events! These are jams you don't want to miss.
+            events! these are jams you don't want to miss.
           </span>
         </div>
       </div>
@@ -242,7 +243,7 @@ const Home: NextPage = () => {
           <DrawerTrigger asChild>
             <Button variant="outline" size="sm" className="rounded-full gap-2">
               <Filter className="h-4 w-4" />
-              Filters
+              filters
               {Object.keys(filters).length > 0 && (
                 <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2 py-0.5">
                   {Object.keys(filters).length}
@@ -252,12 +253,12 @@ const Home: NextPage = () => {
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>Filter Events</DrawerTitle>
+              <DrawerTitle>filter events</DrawerTitle>
             </DrawerHeader>
             <div className="px-4 py-2 space-y-6">
               {/* Date Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Date</label>
+                <label className="text-sm font-medium">date</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
@@ -289,7 +290,7 @@ const Home: NextPage = () => {
 
               {/* Vibe Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Vibe</label>
+                <label className="text-sm font-medium">vibe</label>
                 <Select
                   value={filters.vibe || "all"}
                   onValueChange={(vibe) =>
@@ -315,7 +316,7 @@ const Home: NextPage = () => {
 
               {/* Time of Day Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Time of Day</label>
+                <label className="text-sm font-medium">time of day</label>
                 <Select
                   value={filters.timeOfDay || "all"}
                   onValueChange={(time) =>
@@ -343,7 +344,7 @@ const Home: NextPage = () => {
               {/* Add Attending Filter */}
               {user && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Show Only</label>
+                  <label className="text-sm font-medium">show only</label>
                   <Select
                     value={filters.attending ? "attending" : "all"}
                     onValueChange={(value) =>
@@ -372,10 +373,10 @@ const Home: NextPage = () => {
                 className="w-full"
                 onClick={() => setFilters({})}
               >
-                Clear Filters
+                clear filters
               </Button>
               <DrawerClose asChild>
-                <Button className="w-full">Apply Filters</Button>
+                <Button className="w-full">apply filters</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
@@ -392,7 +393,7 @@ const Home: NextPage = () => {
             }))
           }
         >
-          {filters.attending ? "My Jams" : "My Jams"}
+          {filters.attending ? "my jams" : "my jams"}
         </Button>
       </div>
 
@@ -428,7 +429,7 @@ const Home: NextPage = () => {
                         </h3>
                         {event.is_core && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
-                            Main Jam
+                            main jam
                           </span>
                         )}
                       </div>
@@ -438,7 +439,7 @@ const Home: NextPage = () => {
                         {isAttending(event) ? (
                           <>
                             <Check className="h-3 w-3" />
-                            Attending
+                            attending
                           </>
                         ) : (
                           <>
@@ -493,7 +494,7 @@ const Home: NextPage = () => {
             size="sm"
             className="rounded-full shadow-sm"
           >
-            Create a Jam!
+            create a jam!
           </Button>
         </div>
       )}
