@@ -24,7 +24,7 @@ interface UserStats {
   completed_tasks: string[];
 }
 
-export default function Games() {
+export default function Tasks() {
   const { login, authenticated, user, getAccessToken } = usePrivy();
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,9 +150,10 @@ export default function Games() {
   return (
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold">Games</h1>
+        <h1 className="text-2xl font-bold">Tasks</h1>
         <p className="text-muted-foreground">
-          Complete tasks to earn ⭐ and unlock surprises 🤭
+          Tasks are a way to explore the local culture. Complete tasks to earn
+          ⭐ and unlock surprises 🤭
         </p>
       </div>
 

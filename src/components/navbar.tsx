@@ -24,7 +24,7 @@ export function Navbar() {
   const navigation = [
     { name: "Schedule", href: "/" },
     { name: "Community", href: "/directory" },
-    { name: "Games", href: "/games" },
+    { name: "Tasks", href: "/tasks" },
   ];
 
   const NavLinks = () => (

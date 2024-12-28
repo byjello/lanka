@@ -55,6 +55,14 @@ export default async function handler(
         prompt =
           "Is this a photo of someone riding or sitting in a tuk-tuk/auto-rickshaw? The photo should clearly show someone inside a tuk-tuk or auto-rickshaw. Please respond with just 'true' or 'false'.";
         break;
+      case "VISIT_TEA_PLANTATION":
+        prompt =
+          "Is this a photo of someone visiting a tea plantation? The photo should clearly show someone in a tea plantation, interacting with tea plants, tea trees, or tea leaves, or drinking tea. Please respond with just 'true' or 'false'.";
+        break;
+      case "HAVE_FISH_CURRY":
+        prompt =
+          "Is this a photo of someone eating fish curry? The photo should clearly show someone eating fish curry. Please respond with just 'true' or 'false'.";
+        break;
       default:
         return res
           .status(400)
