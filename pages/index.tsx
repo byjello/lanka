@@ -117,7 +117,7 @@ const Home: NextPage = () => {
 
   // Group and filter events
   const getFilteredAndGroupedEvents = () => {
-    if (!events) return { upcoming: new Map(), past: new Map() };
+    if (!events) return { happening: [], upcoming: new Map(), past: new Map() };
 
     const now = new Date();
 
@@ -142,25 +142,34 @@ const Home: NextPage = () => {
       return isAfter(eventDate, startOfDay(START_DATE));
     });
 
-    // Split into past and upcoming events
-    const pastEvents = filteredEvents.filter(
-      (event) => new Date(event.start_time) < now
-    );
+    // Split into happening now, upcoming, and past events
+    const happeningNow = filteredEvents.filter((event) => {
+      const startTime = new Date(event.start_time);
+      const endTime = new Date(event.end_time);
+      return startTime <= now && endTime >= now;
+    });
+
     const upcomingEvents = filteredEvents.filter(
-      (event) => new Date(event.start_time) >= now
+      (event) => new Date(event.start_time) > now
+    );
+    const pastEvents = filteredEvents.filter(
+      (event) => new Date(event.end_time) < now
     );
 
-    // Sort both arrays
-    pastEvents.sort(
-      (a, b) =>
-        new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
-    ); // Past events newest first
+    // Sort arrays
+    happeningNow.sort(
+      (a, b) => new Date(a.end_time).getTime() - new Date(b.end_time).getTime()
+    );
     upcomingEvents.sort(
       (a, b) =>
         new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    ); // Upcoming events chronologically
+    );
+    pastEvents.sort(
+      (a, b) =>
+        new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    );
 
-    // Group both by date
+    // Group upcoming and past by date
     const groupByDate = (events: Event[]) => {
       const grouped = new Map<string, Event[]>();
       events.forEach((event) => {
@@ -174,12 +183,13 @@ const Home: NextPage = () => {
     };
 
     return {
+      happening: happeningNow,
       upcoming: groupByDate(upcomingEvents),
       past: groupByDate(pastEvents),
     };
   };
 
-  const { upcoming, past } = getFilteredAndGroupedEvents();
+  const { happening, upcoming, past } = getFilteredAndGroupedEvents();
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {
@@ -412,10 +422,97 @@ const Home: NextPage = () => {
 
       {/* Events List */}
       <div className="space-y-8 pb-24">
+        {/* Happening Now */}
+        <div>
+          <h2 className="text-lg font-medium flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+            happening now
+          </h2>
+
+          {happening.length > 0 ? (
+            <div className="space-y-4 mt-4">
+              {happening.map((event) => (
+                <div
+                  key={event.id}
+                  className={cn(
+                    "group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer",
+                    event.is_core &&
+                      "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
+                  )}
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{event.vibe || "🎯"}</span>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-medium text-sm sm:text-base">
+                          {event.title}
+                        </h3>
+                        {event.is_core && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
+                            main jam
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {user && (
+                      <span className="flex items-center gap-1 text-xs text-primary">
+                        {isAttending(event) ? (
+                          <>
+                            <Check className="h-3 w-3" />
+                            attending
+                          </>
+                        ) : (
+                          <>
+                            let's jiggle <ArrowRight className="h-3 w-3" />
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(event.start_time), "h:mm a")}
+                      {" · "}
+                      {calculateDuration(
+                        new Date(event.start_time),
+                        new Date(event.end_time)
+                      )}
+                      {event.location_name && (
+                        <>
+                          {" · "}
+                          <span>{event.location_name}</span>
+                        </>
+                      )}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Hosted by{" "}
+                      <span className="font-medium text-foreground">
+                        {userMap[event.privy_user_id]?.display_name ||
+                          "loading..."}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 p-4 rounded-lg border border-dashed text-center">
+              <p className="text-sm text-muted-foreground">
+                Nothing happening right now. Check out upcoming jams below!
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Separator if there are upcoming events */}
+        {upcoming.size > 0 && <div className="border-t my-8" />}
+
         {/* Upcoming Events */}
         {upcoming.size > 0 && (
           <>
-            <h2 className="text-lg font-medium">Upcoming Jams</h2>
+            <h2 className="text-lg font-medium">upcoming jams</h2>
             {Array.from(upcoming.entries()).map(([dateKey, dayEvents]) => (
               <div key={dateKey}>
                 {/* Date Separator */}
@@ -503,7 +600,7 @@ const Home: NextPage = () => {
           <>
             <div className="border-t my-8" />
             <h2 className="text-lg font-medium text-muted-foreground">
-              Past Jams
+              past jams
             </h2>
             {Array.from(past.entries()).map(([dateKey, dayEvents]) => (
               <div key={dateKey}>
