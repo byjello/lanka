@@ -63,6 +63,22 @@ export default async function handler(
         prompt =
           "Is this a photo of someone eating fish curry? The photo should clearly show someone eating fish curry. Please respond with just 'true' or 'false'.";
         break;
+      case "WHALE_WATCHING":
+        prompt =
+          "Is this a photo of someone whale watching? The photo should clearly show someone whale watching or interacting with whales or just a picture of a whale. Please respond with just 'true' or 'false'.";
+        break;
+      case "PICTURE_WITH_MONKEY":
+        prompt =
+          "Is this a photo of someone with a monkey? The photo should clearly show someone with a monkey. Please respond with just 'true' or 'false'.";
+        break;
+      case "LEARN_TO_SURF":
+        prompt =
+          "Is this a photo of someone learning to surf? The photo should clearly show someone learning to surf, surfing, or it should show someone with a surf board on the beach. Please respond with just 'true' or 'false'.";
+        break;
+      case "MORNING_WRITING":
+        prompt =
+          "Is this a photo of someone at a morning writing group? It could be a picture of a piece of writing, or a group picture of people that seem to be in a writing session. Please respond with just 'true' or 'false'.";
+        break;
       default:
         return res
           .status(400)

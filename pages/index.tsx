@@ -117,19 +117,17 @@ const Home: NextPage = () => {
 
   // Group and filter events
   const getFilteredAndGroupedEvents = () => {
-    if (!events) return new Map();
+    if (!events) return { upcoming: new Map(), past: new Map() };
+
+    const now = new Date();
 
     let filteredEvents = events.filter((event) => {
       const eventDate = new Date(event.start_time);
       const eventHour = eventDate.getHours();
 
-      // Filter by date
+      // Apply existing filters
       if (filters.date && !isSameDay(eventDate, filters.date)) return false;
-
-      // Filter by vibe
       if (filters.vibe && event.vibe !== filters.vibe) return false;
-
-      // Filter by time of day
       if (filters.timeOfDay) {
         if (filters.timeOfDay === "morning" && eventHour >= 12) return false;
         if (
@@ -139,34 +137,49 @@ const Home: NextPage = () => {
           return false;
         if (filters.timeOfDay === "evening" && eventHour < 17) return false;
       }
-
-      // Filter by attending
       if (filters.attending && user && !isAttending(event)) return false;
 
-      // Only show events after START_DATE
       return isAfter(eventDate, startOfDay(START_DATE));
     });
 
-    // Sort by date
-    filteredEvents.sort(
-      (a, b) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    // Split into past and upcoming events
+    const pastEvents = filteredEvents.filter(
+      (event) => new Date(event.start_time) < now
+    );
+    const upcomingEvents = filteredEvents.filter(
+      (event) => new Date(event.start_time) >= now
     );
 
-    // Group by date
-    const grouped = new Map<string, Event[]>();
-    filteredEvents.forEach((event) => {
-      const dateKey = format(new Date(event.start_time), "yyyy-MM-dd");
-      if (!grouped.has(dateKey)) {
-        grouped.set(dateKey, []);
-      }
-      grouped.get(dateKey)!.push(event);
-    });
+    // Sort both arrays
+    pastEvents.sort(
+      (a, b) =>
+        new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+    ); // Past events newest first
+    upcomingEvents.sort(
+      (a, b) =>
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    ); // Upcoming events chronologically
 
-    return grouped;
+    // Group both by date
+    const groupByDate = (events: Event[]) => {
+      const grouped = new Map<string, Event[]>();
+      events.forEach((event) => {
+        const dateKey = format(new Date(event.start_time), "yyyy-MM-dd");
+        if (!grouped.has(dateKey)) {
+          grouped.set(dateKey, []);
+        }
+        grouped.get(dateKey)!.push(event);
+      });
+      return grouped;
+    };
+
+    return {
+      upcoming: groupByDate(upcomingEvents),
+      past: groupByDate(pastEvents),
+    };
   };
 
-  const groupedEvents = getFilteredAndGroupedEvents();
+  const { upcoming, past } = getFilteredAndGroupedEvents();
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) {
@@ -399,87 +412,179 @@ const Home: NextPage = () => {
 
       {/* Events List */}
       <div className="space-y-8 pb-24">
-        {Array.from(groupedEvents.entries()).map(([dateKey, dayEvents]) => (
-          <div key={dateKey}>
-            {/* Date Separator */}
-            <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {format(new Date(dateKey), "EEEE, MMMM d")}
-              </h2>
-            </div>
+        {/* Upcoming Events */}
+        {upcoming.size > 0 && (
+          <>
+            <h2 className="text-lg font-medium">Upcoming Jams</h2>
+            {Array.from(upcoming.entries()).map(([dateKey, dayEvents]) => (
+              <div key={dateKey}>
+                {/* Date Separator */}
+                <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
+                  <h2 className="text-sm font-medium text-muted-foreground">
+                    {format(new Date(dateKey), "EEEE, MMMM d")}
+                  </h2>
+                </div>
 
-            {/* Day's Events */}
-            <div className="space-y-4">
-              {dayEvents.map((event) => (
-                <div
-                  key={event.id}
-                  className={cn(
-                    "group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer",
-                    event.is_core &&
-                      "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
-                  )}
-                  onClick={() => setSelectedEvent(event)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{event.vibe || "🎯"}</span>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-sm sm:text-base">
-                          {event.title}
-                        </h3>
-                        {event.is_core && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
-                            main jam
+                {/* Day's Events */}
+                <div className="space-y-4">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer",
+                        event.is_core &&
+                          "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
+                      )}
+                      onClick={() => setSelectedEvent(event)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{event.vibe || "🎯"}</span>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-sm sm:text-base">
+                              {event.title}
+                            </h3>
+                            {event.is_core && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
+                                main jam
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {user && (
+                          <span className="flex items-center gap-1 text-xs text-primary">
+                            {isAttending(event) ? (
+                              <>
+                                <Check className="h-3 w-3" />
+                                attending
+                              </>
+                            ) : (
+                              <>
+                                let's jiggle <ArrowRight className="h-3 w-3" />
+                              </>
+                            )}
                           </span>
                         )}
                       </div>
-                    </div>
-                    {user && (
-                      <span className="flex items-center gap-1 text-xs text-primary">
-                        {isAttending(event) ? (
-                          <>
-                            <Check className="h-3 w-3" />
-                            attending
-                          </>
-                        ) : (
-                          <>
-                            let's jiggle <ArrowRight className="h-3 w-3" />
-                          </>
-                        )}
-                      </span>
-                    )}
-                  </div>
 
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(event.start_time), "h:mm a")}
-                      {" · "}
-                      {calculateDuration(
-                        new Date(event.start_time),
-                        new Date(event.end_time)
-                      )}
-                      {event.location_name && (
-                        <>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(event.start_time), "h:mm a")}
                           {" · "}
-                          <span>{event.location_name}</span>
-                        </>
-                      )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Hosted by{" "}
-                      <span className="font-medium text-foreground">
-                        {userMap[event.privy_user_id]?.display_name ||
-                          "loading..."}
-                      </span>
-                    </p>
-                  </div>
+                          {calculateDuration(
+                            new Date(event.start_time),
+                            new Date(event.end_time)
+                          )}
+                          {event.location_name && (
+                            <>
+                              {" · "}
+                              <span>{event.location_name}</span>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Hosted by{" "}
+                          <span className="font-medium text-foreground">
+                            {userMap[event.privy_user_id]?.display_name ||
+                              "loading..."}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-        ))}
+              </div>
+            ))}
+          </>
+        )}
 
-        {groupedEvents.size === 0 && (
+        {/* Past Events */}
+        {past.size > 0 && (
+          <>
+            <div className="border-t my-8" />
+            <h2 className="text-lg font-medium text-muted-foreground">
+              Past Jams
+            </h2>
+            {Array.from(past.entries()).map(([dateKey, dayEvents]) => (
+              <div key={dateKey}>
+                <div className="sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 py-2 mb-4">
+                  <h2 className="text-sm font-medium text-muted-foreground">
+                    {format(new Date(dateKey), "EEEE, MMMM d")}
+                  </h2>
+                </div>
+                <div className="space-y-4">
+                  {dayEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className={cn(
+                        "group rounded-lg border p-4 hover:bg-accent/50 transition-colors cursor-pointer opacity-75",
+                        event.is_core &&
+                          "bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800"
+                      )}
+                      onClick={() => setSelectedEvent(event)}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{event.vibe || "🎯"}</span>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-sm sm:text-base">
+                              {event.title}
+                            </h3>
+                            {event.is_core && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-100 font-medium">
+                                main jam
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {user && (
+                          <span className="flex items-center gap-1 text-xs text-primary">
+                            {isAttending(event) ? (
+                              <>
+                                <Check className="h-3 w-3" />
+                                attending
+                              </>
+                            ) : (
+                              <>
+                                let's jiggle <ArrowRight className="h-3 w-3" />
+                              </>
+                            )}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          {format(new Date(event.start_time), "h:mm a")}
+                          {" · "}
+                          {calculateDuration(
+                            new Date(event.start_time),
+                            new Date(event.end_time)
+                          )}
+                          {event.location_name && (
+                            <>
+                              {" · "}
+                              <span>{event.location_name}</span>
+                            </>
+                          )}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Hosted by{" "}
+                          <span className="font-medium text-foreground">
+                            {userMap[event.privy_user_id]?.display_name ||
+                              "loading..."}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {upcoming.size === 0 && past.size === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             No events found
           </div>

@@ -48,6 +48,38 @@ export const TASKS = {
     repeatable: false,
     require_proof: true,
   },
+  WHALE_WATCHING: {
+    id: "WHALE_WATCHING",
+    title: "moby dick",
+    description: "go whale watching in mirissa",
+    points: 20,
+    repeatable: false,
+    require_proof: true,
+  },
+  PICTURE_WITH_MONKEY: {
+    id: "PICTURE_WITH_MONKEY",
+    title: "monkey business",
+    description: "take a picture with a monkey",
+    points: 999,
+    repeatable: false,
+    require_proof: true,
+  },
+  LEARN_TO_SURF: {
+    id: "LEARN_TO_SURF",
+    title: "surf's up",
+    description: "learn to surf",
+    points: 100,
+    repeatable: false,
+    require_proof: true,
+  },
+  MORNING_WRITING: {
+    id: "MORNING_WRITING",
+    title: "charles chickens",
+    description: "join a morning writing group",
+    points: 40,
+    repeatable: false,
+    require_proof: true,
+  },
 } as const;
 
 export type TaskId = keyof typeof TASKS;
